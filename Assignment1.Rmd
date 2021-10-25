@@ -1,0 +1,64 @@
+---
+title: "ASSIGNMENT 1 - draft"
+author: "Amna, Bertrand, Wladka"
+date: "10/25/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## RESEARCH QUESTION
+**Does mixed-use development increase the risk of social conflict in urban communities?**
+
+New Urbanism proponents argue that mixed-use development fosters more diverse and healthier communities and generates economic growth. Mixed-use development is characterized by high density and the co-location of commercial and residential property; other common features include narrower streets and limited parking, wider sidewalks and more pedestrian pathways, public spaces and leisure amenities, and high pedestrian and public transit accessibility. We are interested in exploring some of the possible negative implications of mixed-use development. For this reason, we ask: does mixed-use development increase the risk of social conflict in urban communities? 
+
+## LITERATURE REVIEW
+Twinam et al. 2017 examined the relationship between residential density and mixed-use areas on one hand, and crime on the other, using an extensive dataset from Chicago over a five year period. Results from that study suggest that dense mixed-use areas are safer than residential areas or mixed-use areas with only a limited commercial presence.  However, Zahnow et al. 2018 found that mixed-use development could reduce property crime, it has a less direct impact on violent crime, which is elastic to other factors such as ethnic diversity, household income, and the presence of certain amenities such as late-hour bars and liquor stores. Our research will support or challenge the existing body of research on this topic. 
+
+* Mixed Land Use: Implications for Violence and Property Crime - Renee Zahnow, 2018 (https://journals.sagepub.com/doi/10.1111/cico.12337)
+
+* Danger zone: Land use and the geography of neighborhood crime - ScienceDirect (https://www.sciencedirect.com/science/article/abs/pii/S009411901730044X)
+
+## SAMPLE POPULATION: 
+Our research will focus on the total population of Miami-Dade County. The total population of the country grew from 2,496,435 in the 2010 census to 2,701,767 in the 2020 census. Miami-Dade has one of the largest Latinx communities in the United States with 71.51% of the county’s total population identifying as Latinx compared to only 27.65% in all of Florida. 
+
+* Miami-Dade County - Open Data Hub Site (https://gis-mdc.opendata.arcgis.com/)
+
+## CATEGORICAL VARIABLES: 
+We have set third places (e.g. markets, parks, public squares) and zoning districts (e.g. residential, commercial, mixed-use) as categorical variables in our combined dataset. 
+
+* Third places (e.g. markets, parks, public squares, etc.) → Open Street Maps 
+
+* Zoning; building and property uses (e.g. commercial, industrial, residential, etc.) → Municipal Zone | Municipal Zone | Open Data Hub Site (https://gis-mdc.opendata.arcgis.com/datasets/MDC::municipal-zone/explore?location=25.558433%2C-80.458172%2C10.02&showTable=true)
+
+
+## CONTINUOUS VARIABLES: 
+Our combined dataset also includes the following continuous variables: 
+
+* Crime rates → Crime Mapping | Open Data Hub Site (https://gis-mdc.opendata.arcgis.com/apps/MDC::crime-mapping/about)
+
+* Demographics → U.S. official census 
++ race
++ income 
++ ages
+
+* Life expectancy → U.S. official census 
+
+## OBSERVATIONS IN DATASET:
+* We have run into technical difficulties and we will work with TAs to resolve them by the next assignment. 
+
+```{r}
+library(tidyverse)
+library(tidycensus)
+library(readxl)
+library(knitr)
+```
+
+
+
+
+
+
