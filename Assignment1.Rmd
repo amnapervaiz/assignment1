@@ -56,9 +56,102 @@ library(tidycensus)
 library(readxl)
 library(knitr)
 ```
+# loading the Miami zoning code
+```{r}
+miami_zoning <- read_csv("https://opendata.arcgis.com/api/v3/datasets/e59b1498eaab436f927dc54198d56b5b_0/downloads/data?format=csv&spatialRefId=4326") %>%
+  mutate(GEOID = case_when(str_length(as.character(FIPS)) == 5 ~ 
+                            as.character(FIPS),
+                          str_length(as.character(FIPS)) == 4 ~
+                            paste("0", FIPS, sep=""),
+                          TRUE ~ "not a county")) %>%
+  filter(GEOID != "not a county") %>%
+  select(Confirmed, GEOID)
+```
+# loading the cencus 
+```{r}
+census <- get_decennial(geography = "county", 
+                        year = 2010,
+                        variables = c(pop = "P001001"),
+                        output = "wide",
+                        geometry = FALSE)
+```
+# loading adult population of Miami
+```{r}
+Miami_pop <- get_decennial(geography = "block",
+                          state = "FL", county = "Miami_Dade",
+                          year = 2010,
+                          output = "wide",
+                          variables = c(tot_pop = 'P001001',
+                                        adult_pop = 'P016003'),
+                          geometry = TRUE)
+```
+
+# loading for Open Street the data 
+```{r}
+options(java.parameters = "-Xmx2G")
+
+library(r5r)
+library(osmextract)
+library(sf)
+library(ggthemes)
+library(ggspatial)
+library(tigris)
+library(tidytransit)
+```
+```{r}
+dir.create("network")
+
+download.file("https://www.miamidade.gov/global/transportation/open-data-feeds.page", file.path("networks","SLOgtfs.zip"), mode = "wb", quiet=TRUE)
+```
 
 
+```{r}
+Miami_file <- oe_match("Miami_Dade")
+
+Miami_streets <- oe_read(SLO_file$url, 
+                   provider = "openstreetmap_fr", 
+                   download_directory = "network", 
+                   layer = "lines", 
+                   quiet = TRUE) %>%
+  filter(!is.na(highway))
+```
 
 
+```{r}
+ggplot(SLO_streets) +
+  geom_sf()
+```
+
+```{r}
+CA5_state_plane <- "+proj=lcc +lat_1=34.03333333333333 +lat_2=35.46666666666667 +lat_0=33.5 +lon_0=-118 +x_0=2000000 +y_0=500000 +ellps=GRS80 +units=m +no_defs"
+
+SLO_city_limits <- places("California") %>%
+  filter(NAME == "San Luis Obispo") %>%
+  st_transform(crs = st_crs(SLO_streets))
+
+
+SLO_streets <- SLO_streets[SLO_city_limits,]
+
+ggplot(SLO_streets) +
+  geom_sf() +
+  coord_sf(crs = CA5_state_plane) 
+```
+
+```{r}
+SLO_schools <- oe_read(SLO_file$url, 
+                   provider = "openstreetmap_fr", 
+                   download_directory = "networks", 
+                   layer = "points", 
+                   quiet = TRUE) %>%
+  filter(str_detect(other_tags, '"amenity"=>"school"')) %>%
+  st_filter(SLO_city_limits) %>%
+  rename(id = osm_id)
+
+ggplot(SLO_streets) +
+  geom_sf(color = 'gray') +
+  geom_sf(data = SLO_schools, color = "darkblue") +
+  coord_sf(crs = CA5_state_plane)  +
+  theme_void()
+```
 
 

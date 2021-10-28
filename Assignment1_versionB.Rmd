@@ -1,0 +1,127 @@
+---
+title: "ASSIGNMENT 1 - draft"
+author: "Amna, Bertrand, Wladka"
+date: "10/25/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## RESEARCH QUESTION
+**Does mixed-use development foster more diverse communities?**
+
+New Urbanism proponents argue that mixed-use development fosters more diverse and healthier communities and generates economic growth. Mixed-use development is characterized by high density and the co-location of commercial and residential property; other common features include narrower streets and limited parking, wider sidewalks and more pedestrian pathways, public spaces and leisure amenities, and high pedestrian and public transit accessibility. We are interested in exploring some of the possible negative implications of mixed-use development. For this reason, we ask: does mixed-use development actually foster more diverse communities? 
+
+## LITERATURE REVIEW
+Rolf Pendall in “A Building Block for Inclusion” discusses how inclusive neighborhoods and cities through equitable land use and management and mixed-used development is necessary to achieve sustainable and inclusive growth. The strategies examined analyze the tools and mechanisms that could work within those local contexts. However, further research is needed to investigate how the spatial form and policy could inform demographics and hence, inclusivity. Also, Nabil and Eldayem investigate the positive and negative implications of mixed-use developments over the social capital of the area considered. They conclude that the more the area is mixed in terms of uses, the more the social capital. 
+
+* Mixed Land Use: Implications for Violence and Property Crime - Renee Zahnow, 2018 (https://journals.sagepub.com/doi/10.1111/cico.12337)
+
+* Danger zone: Land use and the geography of neighborhood crime - ScienceDirect (https://www.sciencedirect.com/science/article/abs/pii/S009411901730044X)
+
+## SAMPLE POPULATION: 
+Our research will focus on the total population of Miami-Dade County. The total population of the country grew from 2,496,435 in the 2010 census to 2,701,767 in the 2020 census. Miami-Dade has one of the largest Latinx communities in the United States with 71.51% of the county’s total population identifying as Latinx compared to only 27.65% in all of Florida. 
+
+* Miami-Dade County - Open Data Hub Site (https://gis-mdc.opendata.arcgis.com/)
+
+## CATEGORICAL VARIABLES: 
+We have set municipal zones and parks as categorical variables in our combined dataset. 
+
+* Zoning; building and property uses (e.g. commercial, industrial, residential, etc.) → Municipal Zone | Municipal Zone | Open Data Hub Site (https://gis-mdc.opendata.arcgis.com/datasets/MDC::municipal-zone/explore?location=25.558433%2C-80.458172%2C10.02&showTable=true)
+
+* Municipal parks 
+Municipal Park | Municipal Park | Open Data Hub Site (https://gis-mdc.opendata.arcgis.com/datasets/municipal-park/explore?location=25.762500%2C-80.568516%2C9.73)
+
+
+## CONTINUOUS VARIABLES: 
+We are interested in exploring the relationship between municipal zones and parks, and various demographic factors. As such, our combined dataset also includes the following continuous variables: 
+
+* Demographics → U.S. official census 
++ race / ethnicity
++ income levels
++ age
++ homeowners/renters 
+
+## OBSERVATIONS IN DATASET:
+* We have run into technical difficulties and we will work with TAs to resolve them by the next assignment. 
+
+```{r}
+library(tidyverse)
+library(tidycensus)
+library(readxl)
+library(knitr)
+library(tigris)
+library(sf)
+library(gridExtra)
+```
+
+```{r}
+census_population <- get_decennial(geography = "county", 
+                        year = 2010,
+                        variables = c(pop = "P001001"),
+                        output = "wide",
+                        geometry = FALSE)
+```
+```{r}
+census_race <- get_decennial(geography = "county", 
+                        year = 2010,
+                        variables = c(race = "P003001"),
+                        output = "wide",
+                        geometry = FALSE)
+```
+
+```{r}
+acs_income <- get_acs(geography = "county", 
+                   variables = c(med_income = "B21004_001"), 
+                   output = "wide")
+```
+```{r}
+acs_age <- get_acs(geography = "county", 
+                   variables = c(med_age_ = "B01002_001"), 
+                   output = "wide")
+```
+```{r}
+census_ownership <- get_decennial(geography = "county", 
+                        year = 2010,
+                        variables = c(ownership = "H004002"),
+                        output = "wide",
+                        geometry = FALSE)
+```
+
+```{r}
+census_ownership <- get_decennial(geography = "county", 
+                        year = 2010,
+                        variables = c(ownership = "H004004"),
+                        output = "wide",
+                        geometry = FALSE)
+```
+
+## uploading zoning for Miami. [THIS DIDN'T WORK]
+```{r}
+zoning <- read_csv("https://opendata.arcgis.com/api/v3/datasets/e59b1498eaab436f927dc54198d56b5b_0/downloads/data?format=kml&spatialRefId=4326") %>%
+  mutate(GEOID = case_when(str_length(as.character(FIPS)) == 5 ~ 
+                            as.character(FIPS),
+                          str_length(as.character(FIPS)) == 4 ~
+                            paste("0", FIPS, sep=""),
+                          TRUE ~ "not a county")) %>%
+  filter(GEOID != "not a county") %>%
+  select(Confirmed, GEOID)
+```
+
+## uploading parks for Miami [[THIS DIDN'T WORK]
+```{r}
+parks <- read_csv("https://opendata.arcgis.com/api/v3/datasets/a585b193a4764760802f510f8c5b1452_0/downloads/data?format=kml&spatialRefId=4326") %>%
+  mutate(GEOID = case_when(str_length(as.character(FIPS)) == 5 ~ 
+                            as.character(FIPS),
+                          str_length(as.character(FIPS)) == 4 ~
+                            paste("0", FIPS, sep=""),
+                          TRUE ~ "not a county")) %>%
+  filter(GEOID != "not a county") %>%
+  select(Confirmed, GEOID)
+```
+
+
+
