@@ -46,9 +46,10 @@ We are interested in exploring the relationship between municipal zones and park
 + homeowners/renters 
 
 ## OBSERVATIONS IN DATASET:
-* We have run into technical difficulties and we will work with TAs to resolve them by the next assignment. 
 
-```{r}
+The dataset is 519 census tracts in Miami-Dade county.
+
+```{r, message=FALSE}
 library(tidyverse)
 library(tidycensus)
 library(readxl)
@@ -56,72 +57,130 @@ library(knitr)
 library(tigris)
 library(sf)
 library(gridExtra)
+library(ggthemes)
+```
+
+First get all the census data.
+
+```{r, message=FALSE, results='hide'}
+acs_data <- get_acs(geography = "tract",
+                    state = "FL",
+                    county = "Miami-Dade",
+                   variables = c(med_income_ = "B21004_001",
+                                 med_age_ = "B01002_001",
+                                 HHs_ = "B25003_001",
+                                 num_own_home_ = "B25003_002",
+                                 pop_nh_white_ = "B03002_003",
+                                 pop_black_ = "B03002_004",
+                                 pop_hispanic_ = "B03002_012",
+                                 pop_ = "B03002_001"), 
+                   output = "wide",
+                   geometry = TRUE) %>%
+  mutate(pct_black = pop_black_E / pop_E,
+         pct_nh_white = pop_nh_white_E / pop_E,
+         pct_hispanic = pop_hispanic_E / pop_E,
+         pct_own_home = num_own_home_E / HHs_E)
 ```
 
 ```{r}
-census_population <- get_decennial(geography = "county", 
-                        year = 2010,
-                        variables = c(pop = "P001001"),
-                        output = "wide",
-                        geometry = FALSE)
+kable(head(acs_data))
 ```
-```{r}
-census_race <- get_decennial(geography = "county", 
-                        year = 2010,
-                        variables = c(race = "P003001"),
-                        output = "wide",
-                        geometry = FALSE)
+
+## uploading zoning for Miami.
+
+Assume a mixed-use zone is any zone with the phrase "Urban Center" in the zone description (`ZONE_DESC`).
+
+Then idenitify which census tracts overlap with a mixed use zone.
+
+```{r, message=FALSE, results='hide'}
+mixed_use <- st_read("County_Zoning.geojson") %>%
+  st_transform(crs = st_crs(acs_data)) %>%
+  filter(str_detect(ZONE_DESC, "Urban Center"))
+
+acs_mixed_use <- acs_data[mixed_use,] %>%
+  mutate(mixed_use = TRUE) %>%
+  select(GEOID, mixed_use) %>%
+  st_set_geometry(NULL)
+
+acs_data <- left_join(acs_data, acs_mixed_use) %>%
+  mutate(mixed_use = replace_na(mixed_use, FALSE))
 ```
 
 ```{r}
-acs_income <- get_acs(geography = "county", 
-                   variables = c(med_income = "B21004_001"), 
-                   output = "wide")
+kable(head(acs_data))
 ```
+
+## uploading parks for Miami 
+
+Count the number of parks in each tract
+
+```{r, message=FALSE, results='hide'}
+parks <- st_read("https://opendata.arcgis.com/api/v3/datasets/a585b193a4764760802f510f8c5b1452_0/downloads/data?format=kml&spatialRefId=4326") %>%
+  st_transform(crs = st_crs(acs_data)) 
+
+data <- acs_data %>%
+  mutate(num_parks = lengths(st_covers(acs_data, parks))) %>%
+  select(med_income_E, med_age_E, pct_black, pct_nh_white, pct_hispanic,
+         pct_own_home, mixed_use, num_parks)
+```
+
 ```{r}
-acs_age <- get_acs(geography = "county", 
-                   variables = c(med_age_ = "B01002_001"), 
-                   output = "wide")
-```
-```{r}
-census_ownership <- get_decennial(geography = "county", 
-                        year = 2010,
-                        variables = c(ownership = "H004002"),
-                        output = "wide",
-                        geometry = FALSE)
+kable(head(data))
 ```
 
-```{r}
-census_ownership <- get_decennial(geography = "county", 
-                        year = 2010,
-                        variables = c(ownership = "H004004"),
-                        output = "wide",
-                        geometry = FALSE)
+Check how all this looks on a map.
+
+```{r map income}
+income <- ggplot(data) +
+  geom_sf(aes(fill = med_income_E), color = NA) +
+  theme_void() +
+  ggtitle("Median income") +
+  theme(legend.position = "none")
+
+hispanic <- ggplot(data) +
+  geom_sf(aes(fill = pct_hispanic), color = NA) +
+  theme_void() +
+  ggtitle("Percent Hispanic") +
+  theme(legend.position = "none")
+
+black <- ggplot(data) +
+  geom_sf(aes(fill = pct_black), color = NA) +
+  theme_void() +
+  ggtitle("Percent Black") +
+  theme(legend.position = "none")
+
+white <- ggplot(data) +
+  geom_sf(aes(fill = pct_nh_white), color = NA) +
+  theme_void() +
+  ggtitle("Percent white") +
+  theme(legend.position = "none")
+
+owners <- ggplot(data) +
+  geom_sf(aes(fill = pct_own_home), color = NA) +
+  theme_void() +
+  ggtitle("Percent home owners") +
+  theme(legend.position = "none")
+
+mixed_use <- ggplot(data) +
+  geom_sf(aes(fill = mixed_use), color = NA) +
+  theme_void() +
+  ggtitle("Urban Centers") +
+  theme(legend.position = "none")
+
+parks <- ggplot(data) +
+  geom_sf(aes(fill = num_parks), color = NA) +
+  theme_void() +
+  ggtitle("Number of parks") +
+  theme(legend.position = "none")
+
+age <- ggplot(data) +
+  geom_sf(aes(fill = med_age_E), color = NA) +
+  theme_void() +
+  ggtitle("Median age") +
+  theme(legend.position = "none")
+  
+grid.arrange(hispanic, black,
+             white, income,
+             age, owners, 
+             parks, mixed_use, ncol = 3)
 ```
-
-## uploading zoning for Miami. [THIS DIDN'T WORK]
-```{r}
-zoning <- read_csv("https://opendata.arcgis.com/api/v3/datasets/e59b1498eaab436f927dc54198d56b5b_0/downloads/data?format=kml&spatialRefId=4326") %>%
-  mutate(GEOID = case_when(str_length(as.character(FIPS)) == 5 ~ 
-                            as.character(FIPS),
-                          str_length(as.character(FIPS)) == 4 ~
-                            paste("0", FIPS, sep=""),
-                          TRUE ~ "not a county")) %>%
-  filter(GEOID != "not a county") %>%
-  select(Confirmed, GEOID)
-```
-
-## uploading parks for Miami [[THIS DIDN'T WORK]
-```{r}
-parks <- read_csv("https://opendata.arcgis.com/api/v3/datasets/a585b193a4764760802f510f8c5b1452_0/downloads/data?format=kml&spatialRefId=4326") %>%
-  mutate(GEOID = case_when(str_length(as.character(FIPS)) == 5 ~ 
-                            as.character(FIPS),
-                          str_length(as.character(FIPS)) == 4 ~
-                            paste("0", FIPS, sep=""),
-                          TRUE ~ "not a county")) %>%
-  filter(GEOID != "not a county") %>%
-  select(Confirmed, GEOID)
-```
-
-
-
